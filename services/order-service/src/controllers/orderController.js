@@ -1,7 +1,10 @@
 const pool = require("../models/db");
-const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
+const Stripe = require("stripe");
+const stripe = process.env.STRIPE_SECRET_KEY ? new Stripe(process.env.STRIPE_SECRET_KEY) : null;
 const sgMail = require("@sendgrid/mail");
-sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+if (process.env.SENDGRID_API_KEY) {
+  sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+}
 
 const createOrder = async (req, res) => {
   try {
@@ -19,11 +22,15 @@ const createOrder = async (req, res) => {
       0
     );
 
-    const paymentIntent = await stripe.paymentIntents.create({
-      amount: Math.round(totalPrice * 100), 
-      currency: "eur",
-      metadata: { userId: req.user.id.toString() }
-    });
+    let clientSecret = null;
+    if (stripe) {
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: Math.round(totalPrice * 100),
+        currency: "eur",
+        metadata: { userId: req.user.id.toString() }
+      });
+      clientSecret = paymentIntent.client_secret;
+    }
 
     const newOrder = await pool.query(
       "INSERT INTO orders (user_id, total_price, status) VALUES ($1, $2, $3) RETURNING *",
@@ -41,17 +48,19 @@ const createOrder = async (req, res) => {
 
     await pool.query("DELETE FROM cart_items WHERE user_id = $1", [req.user.id]);
 
-    const msg = {
-      to: req.user.email,
-      from: process.env.SENDGRID_FROM_EMAIL,
-      subject: "Potvrda porudzbine",
-      text: `Vasa porudzbina #${orderId} je uspesno kreirana. Ukupna cena: ${totalPrice} EUR.`
-    };
-    await sgMail.send(msg);
+    if (process.env.SENDGRID_API_KEY) {
+      const msg = {
+        to: req.user.email,
+        from: process.env.SENDGRID_FROM_EMAIL,
+        subject: "Potvrda porudzbine",
+        text: `Vasa porudzbina #${orderId} je uspesno kreirana. Ukupna cena: ${totalPrice} EUR.`
+      };
+      await sgMail.send(msg);
+    }
 
     res.status(201).json({
       order: newOrder.rows[0],
-      clientSecret: paymentIntent.client_secret
+      clientSecret
     });
   } catch (error) {
     res.status(500).json({ message: "Greska na serveru", error: error.message });

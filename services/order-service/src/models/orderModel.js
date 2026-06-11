@@ -22,7 +22,17 @@ const createTables = async () => {
       id SERIAL PRIMARY KEY,
       user_id INTEGER NOT NULL,
       product_id VARCHAR(255) NOT NULL,
-      quantity INTEGER NOT NULL DEFAULT 1
+      quantity INTEGER NOT NULL DEFAULT 1,
+      price DECIMAL(10,2) DEFAULT 0
+    );
+
+    CREATE TABLE IF NOT EXISTS payments (
+      id SERIAL PRIMARY KEY,
+      order_id INTEGER REFERENCES orders(id) ON DELETE CASCADE,
+      payment_method VARCHAR(50) DEFAULT 'CARD',
+      status VARCHAR(50) DEFAULT 'PENDING',
+      stripe_payment_intent_id VARCHAR(255),
+      created_at TIMESTAMP DEFAULT NOW()
     );
   `);
 };
