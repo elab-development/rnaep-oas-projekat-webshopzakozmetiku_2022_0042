@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
+const connectDB = require('./src/models/db');
 const productRoutes = require('./src/routes/productRoutes');
 const reviewRoutes = require('./src/routes/reviewRoutes');
 
@@ -18,6 +19,11 @@ app.get('/health', (req, res) => {
 
 const PORT = process.env.PORT || 3002;
 
-app.listen(PORT, () => {
-  console.log(`Catalog Service running on port ${PORT}`);
-});
+const start = async () => {
+  await connectDB();
+  app.listen(PORT, () => {
+    console.log(`Catalog Service running on port ${PORT}`);
+  });
+};
+
+start();
