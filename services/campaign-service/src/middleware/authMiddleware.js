@@ -25,4 +25,13 @@ const verifyAdmin = (req, res, next) => {
   });
 };
 
-module.exports = { verifyToken, verifyAdmin };
+const verifyMarketingManager = (req, res, next) => {
+  verifyToken(req, res, () => {
+    if (req.user.role !== 'MARKETING_MANAGER' && req.user.role !== 'ADMIN') {
+      return res.status(403).json({ message: 'Pristup samo za marketing menadžere' });
+    }
+    next();
+  });
+};
+
+module.exports = { verifyToken, verifyAdmin, verifyMarketingManager };

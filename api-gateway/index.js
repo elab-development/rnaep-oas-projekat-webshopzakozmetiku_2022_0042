@@ -65,6 +65,25 @@ app.use(
 );
 
 app.use(
+  "/api/admin/orders",
+  verifyToken,
+  createProxyMiddleware({
+    target: process.env.ORDER_SERVICE_URL + "/orders/admin/all",
+    changeOrigin: true,
+    pathRewrite: { "^/api/admin/orders": "" },
+  }),
+);
+
+app.use(
+  "/api/orders/guest",
+  createProxyMiddleware({
+    target: process.env.ORDER_SERVICE_URL + "/orders/guest",
+    changeOrigin: true,
+    pathRewrite: { "^/api/orders/guest": "" },
+  }),
+);
+
+app.use(
   "/api/orders/cart",
   verifyToken,
   createProxyMiddleware({
@@ -81,6 +100,15 @@ app.use(
     target: process.env.ORDER_SERVICE_URL + "/orders",
     changeOrigin: true,
     pathRewrite: { "^/api/orders": "" },
+  }),
+);
+
+app.use(
+  "/api/reviews",
+  createProxyMiddleware({
+    target: process.env.CATALOG_SERVICE_URL + "/reviews",
+    changeOrigin: true,
+    pathRewrite: { "^/api/reviews": "" },
   }),
 );
 

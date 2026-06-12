@@ -109,10 +109,59 @@ const updateGeneralRecommendations = async (req, res) => {
   }
 };
 
+const updateAfterBeautyProfile = async (req, res) => {
+  try {
+    const { userId, skinType, favoriteBrands, allergies } = req.body;
+
+    const axios = require('axios');
+    const catalogUrl = process.env.CATALOG_SERVICE_URL || 'http://catalog-service:3002';
+    const productsRes = await axios.get(`${catalogUrl}/products`);
+    const products = productsRes.data;
+
+    const matchedProducts = products.filter(p => {
+      const skinMatch = skinType && p.skin_type === skinType;
+      const brandMatch = favoriteBrands?.length > 0 && 
+        favoriteBrands.some(b => p.brand?.toLowerCase().includes(b.toLowerCase()));
+      
+      const hasAllergen = allergies?.length > 0 && p.ingredients?.some(ing => 
+        allergies.some(a => ing.toLowerCase().includes(a.toLowerCase()))
+      );
+      
+      return (skinMatch || brandMatch) && !hasAllergen;
+    });
+
+    let recommendation = await PersonalizedRecommendation.findOne({ userId });
+    if (!recommendation) {
+      recommendation = new PersonalizedRecommendation({
+        userId,
+        purchaseHistory: [],
+        recommendedProducts: []
+      });
+    }
+
+    matchedProducts.forEach(p => {
+      const score = p.skin_type === skinType ? 1.0 : 0.7;
+      recommendation.recommendedProducts.push({
+        productId: p._id,
+        score,
+        reason: `Preporuka na osnovu beauty profila (tip koze: ${skinType})`
+      });
+    });
+
+    recommendation.generatedAt = new Date();
+    await recommendation.save();
+
+    res.json(recommendation);
+  } catch (error) {
+    res.status(500).json({ message: 'Greska na serveru', error: error.message });
+  }
+};
+
 module.exports = {
   getPersonalizedRecommendations,
   getGeneralRecommendations,
   updateAfterPurchase,
   updateAfterReview,
-  updateGeneralRecommendations
+  updateGeneralRecommendations,
+  updateAfterBeautyProfile
 };
