@@ -65,10 +65,20 @@ app.use(
 );
 
 app.use(
+  "/api/orders/cart",
+  verifyToken,
+  createProxyMiddleware({
+    target: process.env.ORDER_SERVICE_URL + "/cart",
+    changeOrigin: true,
+    pathRewrite: { "^/api/orders/cart": "" },
+  }),
+);
+
+app.use(
   "/api/orders",
   verifyToken,
   createProxyMiddleware({
-    target: process.env.ORDER_SERVICE_URL + "/api/orders",
+    target: process.env.ORDER_SERVICE_URL + "/orders",
     changeOrigin: true,
     pathRewrite: { "^/api/orders": "" },
   }),

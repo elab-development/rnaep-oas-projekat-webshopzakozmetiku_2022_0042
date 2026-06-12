@@ -14,7 +14,7 @@ const getCart = async (req, res) => {
 
 const addToCart = async (req, res) => {
   try {
-    const { product_id, quantity } = req.body;
+    const { product_id, quantity, price } = req.body;
 
     const existing = await pool.query(
       'SELECT * FROM cart_items WHERE user_id = $1 AND product_id = $2',
@@ -30,8 +30,8 @@ const addToCart = async (req, res) => {
     }
 
     const newItem = await pool.query(
-      'INSERT INTO cart_items (user_id, product_id, quantity) VALUES ($1, $2, $3) RETURNING *',
-      [req.user.id, product_id, quantity]
+      'INSERT INTO cart_items (user_id, product_id, quantity, price) VALUES ($1, $2, $3, $4) RETURNING *',
+      [req.user.id, product_id, quantity, price || 0]
     );
     res.status(201).json(newItem.rows[0]);
   } catch (error) {

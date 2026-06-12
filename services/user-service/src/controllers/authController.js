@@ -5,7 +5,7 @@ require("dotenv").config();
 
 const register = async (req, res) => {
   try {
-    const { email, password, role } = req.body;
+    const { email, password, username, role } = req.body;
 
     const existingUser = await pool.query(
       "SELECT * FROM users WHERE email = $1",
@@ -18,8 +18,8 @@ const register = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const newUser = await pool.query(
-      "INSERT INTO users (email, password, role) VALUES ($1, $2, $3) RETURNING id, email, role",
-      [email, hashedPassword, role || "CUSTOMER"],
+      "INSERT INTO users (username, email, password, role) VALUES ($1, $2, $3, $4) RETURNING id, username, email, role",
+      [username || null, email, hashedPassword, role || "CUSTOMER"],
     );
 
     res

@@ -35,6 +35,7 @@ const createTables = async () => {
       created_at TIMESTAMP DEFAULT NOW()
     );
   `);
+  await pool.query(`ALTER TABLE cart_items ADD COLUMN IF NOT EXISTS price DECIMAL(10,2) DEFAULT 0`);
 };
 
 module.exports = { createTables };
