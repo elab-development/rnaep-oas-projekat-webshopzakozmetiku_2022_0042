@@ -1,4 +1,4 @@
-const pool = require('./db');
+const pool = require("./db");
 
 const createTables = async () => {
   await pool.query(`
@@ -25,41 +25,53 @@ const createTables = async () => {
 };
 
 const getCampaigns = async () => {
-  const result = await pool.query('SELECT * FROM campaigns ORDER BY created_at DESC');
+  const result = await pool.query("SELECT * FROM campaigns ORDER BY id DESC");
   return result.rows;
 };
 
 const getCampaignById = async (id) => {
-  const result = await pool.query('SELECT * FROM campaigns WHERE id = $1', [id]);
+  const result = await pool.query("SELECT * FROM campaigns WHERE id = $1", [
+    id,
+  ]);
   return result.rows[0];
 };
 
 const createCampaign = async (name, description, start_date, end_date) => {
   const result = await pool.query(
-    'INSERT INTO campaigns (name, description, start_date, end_date) VALUES ($1, $2, $3, $4) RETURNING *',
-    [name, description, start_date, end_date]
+    "INSERT INTO campaigns (name, description, start_date, end_date) VALUES ($1, $2, $3, $4) RETURNING *",
+    [name, description, start_date, end_date],
   );
   return result.rows[0];
 };
 
 const getPromoCodeByCode = async (code) => {
-  const result = await pool.query('SELECT * FROM promo_codes WHERE code = $1', [code]);
+  const result = await pool.query("SELECT * FROM promo_codes WHERE code = $1", [
+    code,
+  ]);
   return result.rows[0];
 };
 
 const createPromoCode = async (campaign_id, code, discount_value, max_uses) => {
   const result = await pool.query(
-    'INSERT INTO promo_codes (campaign_id, code, discount_value, max_uses) VALUES ($1, $2, $3, $4) RETURNING *',
-    [campaign_id, code, discount_value, max_uses]
+    "INSERT INTO promo_codes (campaign_id, code, discount_value, max_uses) VALUES ($1, $2, $3, $4) RETURNING *",
+    [campaign_id, code, discount_value, max_uses],
   );
   return result.rows[0];
 };
 
 const incrementPromoCodeUses = async (code) => {
   await pool.query(
-    'UPDATE promo_codes SET current_uses = current_uses + 1 WHERE code = $1',
-    [code]
+    "UPDATE promo_codes SET current_uses = current_uses + 1 WHERE code = $1",
+    [code],
   );
 };
 
-module.exports = { createTables, getCampaigns, getCampaignById, createCampaign, getPromoCodeByCode, createPromoCode, incrementPromoCodeUses };
+module.exports = {
+  createTables,
+  getCampaigns,
+  getCampaignById,
+  createCampaign,
+  getPromoCodeByCode,
+  createPromoCode,
+  incrementPromoCodeUses,
+};
