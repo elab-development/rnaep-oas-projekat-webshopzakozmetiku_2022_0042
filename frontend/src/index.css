@@ -1,0 +1,8 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --color-brand-pink: #F3CFC6;
+  --color-brand-beige: #FAF8F5;
+  --color-brand-border: #EAE6DF;
+}
