@@ -11,13 +11,26 @@ if (process.env.SENDGRID_API_KEY) {
 
 const createOrder = async (req, res) => {
   try {
-    const cartItems = await pool.query(
-      "SELECT * FROM cart_items WHERE user_id = $1",
-      [req.user.id],
-    );
+    const { guest_email } = req.body;
+    const isGuest = !req.user;
 
-    if (cartItems.rows.length === 0) {
-      return res.status(400).json({ message: "Korpa je prazna" });
+    let cartItems;
+
+    if (isGuest) {
+      // Guest - proizvodi dolaze iz body-a
+      const { items } = req.body;
+      if (!items || items.length === 0) {
+        return res.status(400).json({ message: "Korpa je prazna" });
+      }
+      cartItems = { rows: items };
+    } else {
+      cartItems = await pool.query(
+        "SELECT * FROM cart_items WHERE user_id = $1",
+        [req.user.id],
+      );
+      if (cartItems.rows.length === 0) {
+        return res.status(400).json({ message: "Korpa je prazna" });
+      }
     }
 
     const totalPrice = cartItems.rows.reduce(
@@ -25,19 +38,14 @@ const createOrder = async (req, res) => {
       0,
     );
 
-    let clientSecret = null;
-    if (stripe) {
-      const paymentIntent = await stripe.paymentIntents.create({
-        amount: Math.round(totalPrice * 100),
-        currency: "eur",
-        metadata: { userId: req.user.id.toString() },
-      });
-      clientSecret = paymentIntent.client_secret;
-    }
-
     const newOrder = await pool.query(
-      "INSERT INTO orders (user_id, total_price, status) VALUES ($1, $2, $3) RETURNING *",
-      [req.user.id, totalPrice, "PENDING"],
+      "INSERT INTO orders (user_id, total_price, status, guest_email) VALUES ($1, $2, $3, $4) RETURNING *",
+      [
+        isGuest ? null : req.user.id,
+        totalPrice,
+        "PENDING",
+        guest_email || null,
+      ],
     );
 
     const orderId = newOrder.rows[0].id;
@@ -49,48 +57,37 @@ const createOrder = async (req, res) => {
       );
     }
 
-    await pool.query("DELETE FROM cart_items WHERE user_id = $1", [
-      req.user.id,
-    ]);
+    if (!isGuest) {
+      await pool.query("DELETE FROM cart_items WHERE user_id = $1", [
+        req.user.id,
+      ]);
 
-    try {
-      const userServiceUrl =
-        process.env.USER_SERVICE_URL || "http://user-service:3001";
-      const recServiceUrl =
-        process.env.RECOMMENDATION_SERVICE_URL ||
-        "http://recommendation-service:3004";
+      try {
+        const userServiceUrl =
+          process.env.USER_SERVICE_URL || "http://user-service:3001";
+        const recServiceUrl =
+          process.env.RECOMMENDATION_SERVICE_URL ||
+          "http://recommendation-service:3004";
 
-      const profileRes = await axios.get(
-        `${userServiceUrl}/users/beauty-profile`,
-        { headers: { Authorization: req.headers.authorization } },
-      );
-      const skinType = profileRes.data?.skin_type || null;
+        const profileRes = await axios.get(
+          `${userServiceUrl}/users/beauty-profile`,
+          { headers: { Authorization: req.headers.authorization } },
+        );
+        const skinType = profileRes.data?.skin_type || null;
 
-      for (const item of cartItems.rows) {
-        await axios
-          .post(`${recServiceUrl}/api/recommendations/update/purchase`, {
-            userId: req.user.id,
-            productId: item.product_id,
-            skinType,
-          })
-          .catch(() => {});
-      }
-    } catch {}
-
-    if (process.env.SENDGRID_API_KEY) {
-      const msg = {
-        to: req.user.email,
-        from: process.env.SENDGRID_FROM_EMAIL,
-        subject: "Potvrda porudzbine",
-        text: `Vasa porudzbina #${orderId} je uspesno kreirana. Ukupna cena: ${totalPrice} EUR.`,
-      };
-      await sgMail.send(msg);
+        for (const item of cartItems.rows) {
+          await axios
+            .post(`${recServiceUrl}/api/recommendations/update/purchase`, {
+              userId: req.user.id,
+              productId: item.product_id,
+              skinType,
+            })
+            .catch(() => {});
+        }
+      } catch {}
     }
 
-    res.status(201).json({
-      order: newOrder.rows[0],
-      clientSecret,
-    });
+    res.status(201).json({ order: newOrder.rows[0] });
   } catch (error) {
     res
       .status(500)
@@ -151,4 +148,23 @@ const updateOrderStatus = async (req, res) => {
   }
 };
 
-module.exports = { createOrder, getOrders, getOrderById, updateOrderStatus };
+const getAllOrders = async (req, res) => {
+  try {
+    const orders = await pool.query(
+      "SELECT * FROM orders ORDER BY created_at DESC",
+    );
+    res.json(orders.rows);
+  } catch (error) {
+    res
+      .status(500)
+      .json({ message: "Greska na serveru", error: error.message });
+  }
+};
+
+module.exports = {
+  createOrder,
+  getOrders,
+  getOrderById,
+  updateOrderStatus,
+  getAllOrders,
+};

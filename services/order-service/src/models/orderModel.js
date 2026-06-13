@@ -1,4 +1,4 @@
-const pool = require('./db');
+const pool = require("./db");
 
 const createTables = async () => {
   await pool.query(`
@@ -35,7 +35,13 @@ const createTables = async () => {
       created_at TIMESTAMP DEFAULT NOW()
     );
   `);
-  await pool.query(`ALTER TABLE cart_items ADD COLUMN IF NOT EXISTS price DECIMAL(10,2) DEFAULT 0`);
+  await pool.query(
+    `ALTER TABLE cart_items ADD COLUMN IF NOT EXISTS price DECIMAL(10,2) DEFAULT 0`,
+  );
+  await pool.query(
+    `ALTER TABLE orders ADD COLUMN IF NOT EXISTS guest_email VARCHAR(255)`,
+  );
+  await pool.query(`ALTER TABLE orders ALTER COLUMN user_id DROP NOT NULL`);
 };
 
 module.exports = { createTables };
