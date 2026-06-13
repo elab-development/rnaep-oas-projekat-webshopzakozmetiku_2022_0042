@@ -11,13 +11,13 @@ if (process.env.SENDGRID_API_KEY) {
 
 const createOrder = async (req, res) => {
   try {
-    const { guest_email } = req.body;
+    const { guest_email } = req.body || {};
+    console.log("Stripe key exists:", !!process.env.STRIPE_SECRET_KEY);
     const isGuest = !req.user;
 
     let cartItems;
 
     if (isGuest) {
-      // Guest - proizvodi dolaze iz body-a
       const { items } = req.body;
       if (!items || items.length === 0) {
         return res.status(400).json({ message: "Korpa je prazna" });
@@ -49,7 +49,16 @@ const createOrder = async (req, res) => {
     );
 
     const orderId = newOrder.rows[0].id;
-
+    let clientSecret = null;
+    if (stripe) {
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: Math.round(totalPrice * 100),
+        currency: "eur",
+        metadata: { orderId: orderId.toString() },
+      });
+      console.log("Payment intent created:", paymentIntent.id);
+      clientSecret = paymentIntent.client_secret;
+    }
     for (const item of cartItems.rows) {
       await pool.query(
         "INSERT INTO order_items (order_id, product_id, quantity, price) VALUES ($1, $2, $3, $4)",
@@ -86,8 +95,24 @@ const createOrder = async (req, res) => {
         }
       } catch {}
     }
-
-    res.status(201).json({ order: newOrder.rows[0] });
+    if (process.env.SENDGRID_API_KEY && !isGuest) {
+      try {
+        const userRes = await axios.get(
+          `${process.env.USER_SERVICE_URL || "http://user-service:3001"}/users/profile`,
+          { headers: { Authorization: req.headers.authorization } },
+        );
+        const userEmail = userRes.data?.email;
+        if (userEmail) {
+          await sgMail.send({
+            to: userEmail,
+            from: process.env.SENDGRID_FROM_EMAIL,
+            subject: "Potvrda porudzbine",
+            text: `Vasa porudzbina #${orderId} je uspesno kreirana. Ukupna cena: ${totalPrice} RSD.`,
+          });
+        }
+      } catch {}
+    }
+    res.status(201).json({ order: newOrder.rows[0], clientSecret });
   } catch (error) {
     res
       .status(500)
