@@ -1,3 +1,5 @@
+const { sendMessage } = require("../kafka/producer");
+
 const pool = require("../models/db");
 const axios = require("axios");
 
@@ -60,24 +62,17 @@ const createOrUpdateBeautyProfile = async (req, res) => {
     }
 
     try {
-      const recServiceUrl =
-        process.env.RECOMMENDATION_SERVICE_URL ||
-        "http://recommendation-service:3004";
-      console.log("Calling rec service:", recServiceUrl);
-      await axios.post(
-        `${recServiceUrl}/api/recommendations/update/beauty-profile`,
-        {
-          userId: req.user.id,
-          skinType: skin_type,
-          favoriteBrands: favorite_brands
-            ? favorite_brands.split(",").map((b) => b.trim())
-            : [],
-          allergies: allergies ? allergies.split(",").map((a) => a.trim()) : [],
-        },
-      );
-      console.log("Rec service called successfully");
+      await sendMessage("beauty-profile-updated", {
+        userId: req.user.id,
+        skinType: skin_type,
+        favoriteBrands: favorite_brands
+          ? favorite_brands.split(",").map((b) => b.trim())
+          : [],
+        allergies: allergies ? allergies.split(",").map((a) => a.trim()) : [],
+      });
+      console.log("Beauty profile Kafka message sent");
     } catch (err) {
-      console.log("Rec service error:", err.message);
+      console.log("Kafka error:", err.message);
     }
 
     res.status(201).json(profile);
