@@ -1,3 +1,4 @@
+const { sendMessage } = require("../kafka/producer");
 const pool = require("../models/db");
 const axios = require("axios");
 const Stripe = require("stripe");
@@ -74,10 +75,6 @@ const createOrder = async (req, res) => {
       try {
         const userServiceUrl =
           process.env.USER_SERVICE_URL || "http://user-service:3001";
-        const recServiceUrl =
-          process.env.RECOMMENDATION_SERVICE_URL ||
-          "http://recommendation-service:3004";
-
         const profileRes = await axios.get(
           `${userServiceUrl}/users/beauty-profile`,
           { headers: { Authorization: req.headers.authorization } },
@@ -85,13 +82,12 @@ const createOrder = async (req, res) => {
         const skinType = profileRes.data?.skin_type || null;
 
         for (const item of cartItems.rows) {
-          await axios
-            .post(`${recServiceUrl}/api/recommendations/update/purchase`, {
-              userId: req.user.id,
-              productId: item.product_id,
-              skinType,
-            })
-            .catch(() => {});
+          await sendMessage("order-created", {
+            userId: req.user.id,
+            productId: item.product_id,
+            skinType,
+            orderId,
+          });
         }
       } catch {}
     }

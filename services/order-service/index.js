@@ -4,6 +4,7 @@ require('dotenv').config();
 const { createTables } = require('./src/models/orderModel');
 const cartRoutes = require('./src/routes/cartRoutes');
 const orderRoutes = require('./src/routes/orderRoutes');
+const { connectProducer } = require('./src/kafka/producer');
 
 const app = express();
 
@@ -21,6 +22,11 @@ const PORT = process.env.PORT || 3003;
 
 const start = async () => {
   await createTables();
+  try {
+    await connectProducer();
+  } catch (err) {
+    console.error('Kafka producer connection failed:', err.message);
+  }
   app.listen(PORT, () => {
     console.log(`Order Service running on port ${PORT}`);
   });
