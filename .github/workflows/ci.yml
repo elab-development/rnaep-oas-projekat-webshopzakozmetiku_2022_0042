@@ -1,0 +1,80 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: ['**']
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install and test user-service
+        run: |
+          cd services/user-service
+          npm install
+          npm test
+
+      - name: Install and test order-service
+        run: |
+          cd services/order-service
+          npm install
+          npm test
+
+      - name: Install and test catalog-service
+        run: |
+          cd services/catalog-service
+          npm install
+          npm test
+
+      - name: Install and test recommendation-service
+        run: |
+          cd services/recommendation-service
+          npm install
+          npm test
+
+      - name: Install and test campaign-service
+        run: |
+          cd services/campaign-service
+          npm install
+          npm test
+
+  build:
+    needs: test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build user-service
+        run: docker build ./services/user-service -t user-service
+
+      - name: Build catalog-service
+        run: docker build ./services/catalog-service -t catalog-service
+
+      - name: Build order-service
+        run: docker build ./services/order-service -t order-service
+
+      - name: Build recommendation-service
+        run: docker build ./services/recommendation-service -t recommendation-service
+
+      - name: Build campaign-service
+        run: docker build ./services/campaign-service -t campaign-service
+
+      - name: Build api-gateway
+        run: docker build ./api-gateway -t api-gateway
+
+      - name: Build frontend
+        run: docker build ./frontend -t frontend
