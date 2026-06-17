@@ -1,5 +1,6 @@
 const express = require("express");
 const cors = require("cors");
+const helmet = require("helmet");
 const dotenv = require("dotenv");
 const { createProxyMiddleware } = require("http-proxy-middleware");
 const { verifyToken } = require("./src/middleware/authMiddleware");
@@ -7,7 +8,15 @@ const { verifyToken } = require("./src/middleware/authMiddleware");
 dotenv.config();
 
 const app = express();
-app.use(cors());
+app.use(helmet());
+
+app.use(
+  cors({
+    origin: "http://localhost:5173",
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  }),
+);
 
 app.use(
   "/api/users/register",
