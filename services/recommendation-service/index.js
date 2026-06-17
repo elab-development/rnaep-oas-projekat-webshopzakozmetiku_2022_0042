@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const helmet = require('helmet');
 const dotenv = require('dotenv');
 const connectDB = require('./src/models/db');
 const recommendationRoutes = require('./src/routes/recommendationRoutes');
@@ -10,6 +11,8 @@ dotenv.config();
 connectDB();
 
 const app = express();
+
+app.use(helmet());
 app.use(cors());
 app.use(express.json());
 

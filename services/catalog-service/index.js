@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const helmet = require('helmet');
 require('dotenv').config();
 const connectDB = require('./src/models/db');
 const productRoutes = require('./src/routes/productRoutes');
@@ -9,6 +10,7 @@ const { connectProducer } = require('./src/kafka/producer');
 
 const app = express();
 
+app.use(helmet());
 app.use(cors());
 app.use(express.json());
 
