@@ -154,6 +154,23 @@ services:
       - order-service
       - recommendation-service
       - campaign-service
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    restart: on-failure
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3006:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: admin
+    depends_on:
+      - prometheus
+    restart: on-failure
 
   frontend:
     build: ./frontend
