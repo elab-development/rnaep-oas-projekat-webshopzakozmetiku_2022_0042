@@ -1,3 +1,5 @@
+const beautyProfileBreaker = require("../utils/circuitBreaker");
+
 const { sendMessage } = require("../kafka/producer");
 const pool = require("../models/db");
 const axios = require("axios");
@@ -73,13 +75,11 @@ const createOrder = async (req, res) => {
       ]);
 
       try {
-        const userServiceUrl =
-          process.env.USER_SERVICE_URL || "http://user-service:3001";
-        const profileRes = await axios.get(
-          `${userServiceUrl}/users/beauty-profile`,
-          { headers: { Authorization: req.headers.authorization } },
+        const profileData = await beautyProfileBreaker.fire(
+          req.user.id,
+          req.headers.authorization,
         );
-        const skinType = profileRes.data?.skin_type || null;
+        const skinType = profileData?.skin_type || null;
 
         for (const item of cartItems.rows) {
           await sendMessage("order-created", {
@@ -89,7 +89,9 @@ const createOrder = async (req, res) => {
             orderId,
           });
         }
-      } catch {}
+      } catch (err) {
+        console.error("Error fetching beauty profile:", err.message);
+      }
     }
     if (process.env.SENDGRID_API_KEY && !isGuest) {
       try {
