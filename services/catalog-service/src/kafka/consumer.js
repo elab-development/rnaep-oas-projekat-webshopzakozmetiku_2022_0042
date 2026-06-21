@@ -37,15 +37,6 @@ const startConsuming = async () => {
             stock: product.stock,
           });
           console.log(`Stock-updated event sent for ${product.name}`);
-
-          if (product.stock < 10) {
-            await sendMessage("low-stock-alert", {
-              productId: product._id,
-              productName: product.name,
-              stock: product.stock,
-            });
-            console.log(`Low stock alert sent for ${product.name}`);
-          }
         }
       } catch (err) {
         console.error("Error updating stock:", err.message);

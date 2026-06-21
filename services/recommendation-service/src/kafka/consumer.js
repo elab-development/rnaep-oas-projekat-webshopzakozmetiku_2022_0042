@@ -39,20 +39,10 @@ const startConsuming = async (recommendationController) => {
 
       if (topic === "order-created") {
         await recommendationController.updateAfterPurchaseKafka(data);
-        await sendMessage("recommendation-update", {
-          userId: data.userId,
-          type: "purchase",
-          updatedAt: new Date().toISOString(),
-        });
       }
 
       if (topic === "beauty-profile-updated") {
         await recommendationController.updateAfterBeautyProfileKafka(data);
-        await sendMessage("recommendation-update", {
-          userId: data.userId,
-          type: "beauty-profile",
-          updatedAt: new Date().toISOString(),
-        });
       }
 
       if (topic === "stock-updated") {
