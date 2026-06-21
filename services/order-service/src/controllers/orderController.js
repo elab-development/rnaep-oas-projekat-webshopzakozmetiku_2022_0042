@@ -1,5 +1,5 @@
 const beautyProfileBreaker = require("../utils/circuitBreaker");
-
+const stockBreaker = require("../utils/stockBreaker");
 const { sendMessage } = require("../kafka/producer");
 const pool = require("../models/db");
 const axios = require("axios");
@@ -33,6 +33,17 @@ const createOrder = async (req, res) => {
       );
       if (cartItems.rows.length === 0) {
         return res.status(400).json({ message: "Korpa je prazna" });
+      }
+    }
+
+    for (const item of cartItems.rows) {
+      console.log("Provera stock za productId:", item.product_id);
+      const product = await stockBreaker.fire(item.product_id);
+      console.log("Product vraćen:", product);
+      if (product && product.stock <= 0) {
+        return res.status(400).json({
+          message: `Proizvod "${product.name}" nije na zalihama`,
+        });
       }
     }
 

@@ -66,6 +66,16 @@ const incrementPromoCodeUses = async (code) => {
   );
 };
 
+const getAllPromoCodes = async () => {
+  const result = await pool.query(
+    `SELECT promo_codes.*, campaigns.name as campaign_name 
+     FROM promo_codes 
+     JOIN campaigns ON promo_codes.campaign_id = campaigns.id 
+     ORDER BY promo_codes.id DESC`
+  );
+  return result.rows;
+};
+
 module.exports = {
   createTables,
   getCampaigns,
@@ -74,4 +84,5 @@ module.exports = {
   getPromoCodeByCode,
   createPromoCode,
   incrementPromoCodeUses,
+  getAllPromoCodes,
 };

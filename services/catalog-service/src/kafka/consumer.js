@@ -29,8 +29,16 @@ const startConsuming = async () => {
           console.log(
             `Stock updated for product ${data.productId}: ${product.stock} remaining`,
           );
+
+          const { sendMessage } = require("../kafka/producer");
+
+          await sendMessage("stock-updated", {
+            productId: product._id,
+            stock: product.stock,
+          });
+          console.log(`Stock-updated event sent for ${product.name}`);
+
           if (product.stock < 10) {
-            const { sendMessage } = require("../kafka/producer");
             await sendMessage("low-stock-alert", {
               productId: product._id,
               productName: product.name,

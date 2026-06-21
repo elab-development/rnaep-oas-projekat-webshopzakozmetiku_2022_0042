@@ -9,6 +9,7 @@ export default function MarketingPanel() {
 
   const [activeTab, setActiveTab] = useState('campaigns');
   const [campaigns, setCampaigns] = useState([]);
+  const [promoCodes, setPromoCodes] = useState([]);
   const [showCampaignForm, setShowCampaignForm] = useState(false);
   const [showPromoForm, setShowPromoForm] = useState(false);
   const [analytics, setAnalytics] = useState(null);
@@ -33,6 +34,15 @@ export default function MarketingPanel() {
       setCampaigns(res.data);
     } catch {
       console.error('Greška pri učitavanju kampanja');
+    }
+  };
+
+  const loadPromoCodes = async () => {
+    try {
+      const res = await API.get('/api/campaigns/promo/all');
+      setPromoCodes(res.data);
+    } catch {
+      console.error('Greška pri učitavanju promo kodova');
     }
   };
 
@@ -63,6 +73,7 @@ export default function MarketingPanel() {
   useEffect(() => {
     const load = async () => {
       await loadCampaigns();
+      if (activeTab === 'promo') await loadPromoCodes();
       if (activeTab === 'analytics') await loadAnalytics();
     };
     load();
@@ -89,6 +100,7 @@ export default function MarketingPanel() {
       });
       setPromoForm({ campaign_id: '', code: '', discount_value: '', max_uses: '' });
       setShowPromoForm(false);
+      loadPromoCodes();
       alert('Promo kod kreiran!');
     } catch {
       alert('Greška pri kreiranju promo koda.');
@@ -198,7 +210,7 @@ export default function MarketingPanel() {
           <div>
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-xs uppercase tracking-widest font-bold text-[#222222]">
-                Promo Kodovi
+                Promo Kodovi ({promoCodes.length})
               </h2>
               <button onClick={() => setShowPromoForm(true)}
                 className="bg-[#222222] text-white px-6 py-2 text-xs uppercase tracking-widest hover:bg-black transition-colors">
@@ -243,8 +255,26 @@ export default function MarketingPanel() {
               </div>
             )}
 
-            <div className="text-center py-12 bg-[#F9F9F9] border border-dashed border-[#F0EFEA]">
-              <p className="text-xs text-[#888888]">Kreirajte promo kod vezan za kampanju.</p>
+            <div className="space-y-3">
+              {promoCodes.map(promo => (
+                <div key={promo.id} className="border border-[#F0EFEA] p-5 flex justify-between items-center">
+                  <div>
+                    <p className="text-xs font-bold text-[#222222] tracking-widest">{promo.code}</p>
+                    <p className="text-[10px] text-[#888888] mt-1">{promo.campaign_name}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs text-[#222222]">{promo.discount_value} RSD popusta</p>
+                    <p className="text-[10px] text-[#888888] mt-1">
+                      Iskorišćeno {promo.current_uses}{promo.max_uses ? ` / ${promo.max_uses}` : ''}
+                    </p>
+                  </div>
+                </div>
+              ))}
+              {promoCodes.length === 0 && (
+                <div className="text-center py-12 bg-[#F9F9F9] border border-dashed border-[#F0EFEA]">
+                  <p className="text-xs text-[#888888]">Kreirajte promo kod vezan za kampanju.</p>
+                </div>
+              )}
             </div>
           </div>
         )}

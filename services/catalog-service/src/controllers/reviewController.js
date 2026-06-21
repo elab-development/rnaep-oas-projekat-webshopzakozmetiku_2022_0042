@@ -1,3 +1,4 @@
+const { sendMessage } = require('../kafka/producer');
 const Review = require('../models/reviewModel');
 
 const getReviewsByProduct = async (req, res) => {
@@ -16,6 +17,18 @@ const createReview = async (req, res) => {
       user_id: req.user.id
     });
     await review.save();
+
+    try {
+      await sendMessage('review-submitted', {
+        userId: req.user.id,
+        productId: review.product_id,
+        rating: review.rating
+      });
+      console.log('Review-submitted event sent');
+    } catch (err) {
+      console.error('Kafka error:', err.message);
+    }
+
     res.status(201).json(review);
   } catch (error) {
     res.status(500).json({ message: 'Greska na serveru', error: error.message });
