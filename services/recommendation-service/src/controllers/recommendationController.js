@@ -272,6 +272,64 @@ const updateAfterBeautyProfileKafka = async (data) => {
     );
   }
 };
+
+const removeOutOfStockProduct = async (data) => {
+  try {
+    const { productId, stock } = data;
+
+    if (stock > 0) return;
+
+    const allRecommendations = await PersonalizedRecommendation.find({
+      "recommendedProducts.productId": productId,
+    });
+
+    for (const rec of allRecommendations) {
+      rec.recommendedProducts = rec.recommendedProducts.filter(
+        (p) => p.productId.toString() !== productId.toString(),
+      );
+      await rec.save();
+    }
+
+    console.log(`Proizvod ${productId} izbacen iz preporuka (stock: 0)`);
+  } catch (error) {
+    console.error(
+      "Error removing out of stock product from recommendations:",
+      error.message,
+    );
+  }
+};
+
+const updateAfterReviewKafka = async (data) => {
+  try {
+    const { userId, productId, rating } = data;
+
+    let recommendation = await PersonalizedRecommendation.findOne({ userId });
+    if (!recommendation) {
+      console.log(
+        `Korisnik ${userId} nije pronadjen, recenzija ignorisana za preporuke`,
+      );
+      return;
+    }
+
+    const score = rating / 5.0;
+
+    recommendation.recommendedProducts.push({
+      productId,
+      score,
+      reason: `Preporuka na osnovu ocene ${rating}/5 (Kafka event)`,
+    });
+
+    recommendation.generatedAt = new Date();
+    await recommendation.save();
+    console.log(`Recommendations updated for user ${userId} after review`);
+  } catch (error) {
+    console.error(
+      "Error updating recommendations after review:",
+      error.message,
+    );
+  }
+};
+
 module.exports = {
   getPersonalizedRecommendations,
   getGeneralRecommendations,
@@ -281,4 +339,6 @@ module.exports = {
   updateAfterBeautyProfile,
   updateAfterPurchaseKafka,
   updateAfterBeautyProfileKafka,
+  removeOutOfStockProduct,
+  updateAfterReviewKafka
 };

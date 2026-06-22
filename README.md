@@ -70,15 +70,14 @@ Komunikacija između mikroservisa transformisana je iz sinhrone (HTTP) u asinhro
 **Topics:**
 - `order-created` – kreirana je nova porudžbina
 - `beauty-profile-updated` – korisnik je promenio beauty profil
-- `low-stock-alert` – zalihe proizvoda su pale ispod minimuma
-- `recommendation-update` – preporuke su ažurirane
+- `stock-updated` – ažurirano je stanje zaliha proizvoda nakon kupovine
+- `review-submitted` – korisnik je ostavio recenziju proizvoda
 
 **Producer-i:** order-service, user-service, catalog-service
 **Consumer-i:** catalog-service, recommendation-service
 
-**Hibridni moduli (Consumer + Producer):**
-- **recommendation-service** – konzumira `order-created` i `beauty-profile-updated`, ažurira preporuke i publikuje `recommendation-update`
-- **catalog-service** – konzumira `order-created`, smanjuje zalihe i publikuje `low-stock-alert`
+**Hibridni modul (Consumer + Producer):**
+- **catalog-service** – konzumira `order-created`, smanjuje zalihe proizvoda i publikuje `stock-updated`
 
 ---
 
@@ -89,6 +88,15 @@ Komunikacija između mikroservisa transformisana je iz sinhrone (HTTP) u asinhro
 - **IDOR** – middleware (`verifyToken`) proverava identitet korisnika pre pristupa resursima
 - **SQL Injection** – korišćeni parametrizovani upiti (PostgreSQL) i Mongoose ORM (MongoDB)
 - **CSRF** – zaštita putem JWT autentikacije
+
+---
+
+## CI/CD
+
+Proces razvoja je automatizovan korišćenjem GitHub Actions. Pipeline se okida na svaki push i sastoji se od dve faze:
+
+- **test** – instalira zavisnosti i pokreće unit testove za svaki mikroservis
+- **build** – pokreće se samo ako testovi prođu; builduje Docker image za svaki mikroservis i frontend, i objavljuje ih na [Docker Hub](https://hub.docker.com/u/suzanatesovic)
 
 ---
 
@@ -105,7 +113,10 @@ Svi mikroservisi izlažu `/metrics` endpoint sa podacima o broju HTTP zahteva, s
 
 ## Distribuirani paterni
 
-**Circuit Breaker** je implementiran korišćenjem `opossum` biblioteke za poziv ka User Service-u prilikom kreiranja porudžbine.
+**Circuit Breaker** je implementiran korišćenjem `opossum` biblioteke na dva mesta u Order Service-u:
 
-Kada Order Service kreira porudžbinu, poziva User Service da dobije beauty profil korisnika. Ako User Service postane nedostupan ili previše spor (timeout 3s), prekidač se otvara nakon određenog broja neuspešnih pokušaja i odmah vraća fallback odgovor umesto da čeka, čime se sprečava kaskadno otkazivanje sistema. Nakon 10 sekundi, prekidač ponovo pokušava da uspostavi konekciju.
+1. **Provera beauty profila** – prilikom kreiranja porudžbine, Order Service poziva User Service da dobije beauty profil korisnika. Ako User Service postane nedostupan ili previše spor (timeout 3s), prekidač se otvara i odmah vraća fallback odgovor (bez beauty profila) umesto da čeka, čime se sprečava kaskadno otkazivanje sistema.
 
+2. **Provera zaliha** – prilikom kreiranja porudžbine, Order Service poziva Catalog Service da provери da li su proizvodi iz korpe na zalihama. Ako je proizvod nedostupan, porudžbina se odbija. Ako Catalog Service ne odgovori (timeout 3s), fallback dozvoljava kupovinu da nastavi.
+
+Nakon 10 sekundi, oba prekidača ponovo pokušavaju da uspostave konekciju.

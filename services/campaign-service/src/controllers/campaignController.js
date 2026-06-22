@@ -6,6 +6,7 @@ const {
   getPromoCodeByCode,
   createPromoCode,
   incrementPromoCodeUses,
+  getAllPromoCodes,
 } = require("../models/campaignModel");
 
 const getAllCampaigns = async (req, res) => {
@@ -112,11 +113,21 @@ const addPromoCode = async (req, res) => {
       .json({ message: "Greska na serveru", error: error.message });
   }
 };
-
+const getAllPromos = async (req, res) => {
+  try {
+    const promoCodes = await getAllPromoCodes();
+    res.json(promoCodes);
+  } catch (error) {
+    res
+      .status(500)
+      .json({ message: "Greska na serveru", error: error.message });
+  }
+};
 module.exports = {
   getAllCampaigns,
   getCampaign,
   addCampaign,
   validatePromoCode,
   addPromoCode,
+  getAllPromos,
 };
