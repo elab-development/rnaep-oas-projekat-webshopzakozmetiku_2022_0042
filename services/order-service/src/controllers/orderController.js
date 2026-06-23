@@ -1,3 +1,6 @@
+const beautyProfileBreaker = require("../utils/circuitBreaker");
+const stockBreaker = require("../utils/stockBreaker");
+const { sendMessage } = require("../kafka/producer");
 const pool = require("../models/db");
 const axios = require("axios");
 const Stripe = require("stripe");
@@ -30,6 +33,17 @@ const createOrder = async (req, res) => {
       );
       if (cartItems.rows.length === 0) {
         return res.status(400).json({ message: "Korpa je prazna" });
+      }
+    }
+
+    for (const item of cartItems.rows) {
+      console.log("Provera stock za productId:", item.product_id);
+      const product = await stockBreaker.fire(item.product_id);
+      console.log("Product vraćen:", product);
+      if (product && product.stock <= 0) {
+        return res.status(400).json({
+          message: `Proizvod "${product.name}" nije na zalihama`,
+        });
       }
     }
 
@@ -72,28 +86,23 @@ const createOrder = async (req, res) => {
       ]);
 
       try {
-        const userServiceUrl =
-          process.env.USER_SERVICE_URL || "http://user-service:3001";
-        const recServiceUrl =
-          process.env.RECOMMENDATION_SERVICE_URL ||
-          "http://recommendation-service:3004";
-
-        const profileRes = await axios.get(
-          `${userServiceUrl}/users/beauty-profile`,
-          { headers: { Authorization: req.headers.authorization } },
+        const profileData = await beautyProfileBreaker.fire(
+          req.user.id,
+          req.headers.authorization,
         );
-        const skinType = profileRes.data?.skin_type || null;
+        const skinType = profileData?.skin_type || null;
 
         for (const item of cartItems.rows) {
-          await axios
-            .post(`${recServiceUrl}/api/recommendations/update/purchase`, {
-              userId: req.user.id,
-              productId: item.product_id,
-              skinType,
-            })
-            .catch(() => {});
+          await sendMessage("order-created", {
+            userId: req.user.id,
+            productId: item.product_id,
+            skinType,
+            orderId,
+          });
         }
-      } catch {}
+      } catch (err) {
+        console.error("Error fetching beauty profile:", err.message);
+      }
     }
     if (process.env.SENDGRID_API_KEY && !isGuest) {
       try {

@@ -12,8 +12,76 @@ import Recommendations from "./pages/Recommendation";
 import AdminPanel from "./pages/AdminPanel";
 import MarketingPanel from "./pages/MarketingPanel";
 import Checkout from "./pages/Checkout";
+import BeautyProfile from "./pages/BeautyProfile";
+
 function NavBar() {
   const { user, logout } = useContext(AuthContext);
+
+  if (user?.role === "ADMIN") {
+    return (
+      <nav className="bg-white/80 backdrop-blur-md border-b border-[#F0EFEA] sticky top-0 z-50 transition-all duration-300">
+        <div className="max-w-7xl mx-auto px-4 md:px-8 h-20 flex items-center justify-between">
+          <Link
+            to="/admin"
+            className="text-2xl font-normal tracking-widest text-[#222222] font-serif uppercase group"
+          >
+            glow<span className="text-[#222222] font-sans font-light">.</span>
+          </Link>
+
+          <div className="flex items-center space-x-6 text-[11px] uppercase tracking-widest font-medium text-[#222222]">
+            <Link
+              to="/admin"
+              className="hover:text-[#888888] transition-colors duration-200"
+            >
+              Admin
+            </Link>
+
+            <span className="text-[#EAE9E4] font-light text-sm">|</span>
+
+            <button
+              onClick={logout}
+              className="text-[11px] uppercase tracking-widest font-bold text-[#E05A47] hover:text-black transition-colors duration-200 cursor-pointer bg-transparent border-none p-0"
+            >
+              Odjavi se
+            </button>
+          </div>
+        </div>
+      </nav>
+    );
+  }
+
+  if (user?.role === "MARKETING_MANAGER") {
+    return (
+      <nav className="bg-white/80 backdrop-blur-md border-b border-[#F0EFEA] sticky top-0 z-50 transition-all duration-300">
+        <div className="max-w-7xl mx-auto px-4 md:px-8 h-20 flex items-center justify-between">
+          <Link
+            to="/marketing"
+            className="text-2xl font-normal tracking-widest text-[#222222] font-serif uppercase group"
+          >
+            glow<span className="text-[#222222] font-sans font-light">.</span>
+          </Link>
+
+          <div className="flex items-center space-x-6 text-[11px] uppercase tracking-widest font-medium text-[#222222]">
+            <Link
+              to="/marketing"
+              className="hover:text-[#888888] transition-colors duration-200"
+            >
+              Marketing
+            </Link>
+
+            <span className="text-[#EAE9E4] font-light text-sm">|</span>
+
+            <button
+              onClick={logout}
+              className="text-[11px] uppercase tracking-widest font-bold text-[#E05A47] hover:text-black transition-colors duration-200 cursor-pointer bg-transparent border-none p-0"
+            >
+              Odjavi se
+            </button>
+          </div>
+        </div>
+      </nav>
+    );
+  }
 
   return (
     <nav className="bg-white/80 backdrop-blur-md border-b border-[#F0EFEA] sticky top-0 z-50 transition-all duration-300">
@@ -56,20 +124,12 @@ function NavBar() {
           >
             Porudžbine
           </Link>
-          {user?.role === "ADMIN" && (
+          {user && (
             <Link
-              to="/admin"
+              to="/beauty-profile"
               className="hover:text-[#888888] transition-colors duration-200"
             >
-              Admin
-            </Link>
-          )}
-          {user?.role === "MARKETING_MANAGER" && (
-            <Link
-              to="/marketing"
-              className="hover:text-[#888888] transition-colors duration-200"
-            >
-              Marketing
+              Moj Profil
             </Link>
           )}
 
@@ -116,6 +176,7 @@ export default function App() {
                 <Route path="/admin" element={<AdminPanel />} />
                 <Route path="/marketing" element={<MarketingPanel />} />
                 <Route path="/checkout" element={<Checkout />} />
+                <Route path="/beauty-profile" element={<BeautyProfile />} />
               </Routes>
             </main>
           </div>
