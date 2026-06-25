@@ -64,7 +64,7 @@ services:
       DB_NAME: userdb
       DB_USER: postgres
       DB_PASSWORD: postgres
-      JWT_SECRET: secret_key_333
+      JWT_SECRET: ${JWT_SECRET}
       KAFKA_BROKER: kafka:9092
     depends_on:
       - postgres-user
@@ -78,7 +78,7 @@ services:
     environment:
       PORT: 3002
       MONGO_URI: mongodb://mongodb:27017/catalogdb
-      JWT_SECRET: secret_key_333
+      JWT_SECRET: ${JWT_SECRET}
       KAFKA_BROKER: kafka:9092
     depends_on:
       - mongodb
@@ -96,7 +96,7 @@ services:
       DB_NAME: orderdb
       DB_USER: postgres
       DB_PASSWORD: postgres
-      JWT_SECRET: secret_key_333
+      JWT_SECRET: ${JWT_SECRET}
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
       SENDGRID_API_KEY: ${SENDGRID_API_KEY}
       SENDGRID_FROM_EMAIL: ${SENDGRID_FROM_EMAIL}
@@ -113,7 +113,7 @@ services:
     environment:
       PORT: 3004
       MONGO_URI: mongodb://mongodb:27017/recommendation-db
-      JWT_SECRET: secret_key_333
+      JWT_SECRET: ${JWT_SECRET}
       KAFKA_BROKER: kafka:9092
     depends_on:
       - mongodb
@@ -131,7 +131,7 @@ services:
       DB_NAME: campaigndb
       DB_USER: postgres
       DB_PASSWORD: postgres
-      JWT_SECRET: secret_key_333
+      JWT_SECRET: ${JWT_SECRET}
     depends_on:
       - postgres-campaign
     restart: on-failure
@@ -142,7 +142,7 @@ services:
       - "3000:3000"
     environment:
       PORT: 3000
-      JWT_SECRET: secret_key_333
+      JWT_SECRET: ${JWT_SECRET}
       USER_SERVICE_URL: http://user-service:3001
       CATALOG_SERVICE_URL: http://catalog-service:3002
       ORDER_SERVICE_URL: http://order-service:3003
